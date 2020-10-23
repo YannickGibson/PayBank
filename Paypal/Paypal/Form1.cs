@@ -36,31 +36,59 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
         public abstract class BankAccount
         {
             public decimal balance { get; set; }
+            public decimal interest { get; set; }
             //
-            public BankAccount(decimal startBalance = 10_000)
+            public BankAccount(decimal startBalance = 10_000, decimal interest = 0.01m)
             {
                 balance = startBalance;
+                this.interest = interest;
+            }
+            public abstract void MonthlyInterest();
+            public abstract void Update(Form1 formReference);
+            public string Balance()
+            {
+                return $"Balance: {balance:#.##}Kč";
             }
         }
         public class SavingsAccount : BankAccount 
         { 
-            public SavingsAccount() : base()
+            public SavingsAccount(decimal startBalance, decimal interest) : base(startBalance, interest)
             {
-    
+            
+            }
+            public override void MonthlyInterest()
+            {
+                balance += balance * interest;
+            }
+            public override void Update(Form1 formReference)
+            {
+                formReference.savingsAccountBalanceLabel.Text = Balance(); 
             }
         }
         public class StudentsSavingsAccount : SavingsAccount
         {
-            public StudentsSavingsAccount() : base()
+            public StudentsSavingsAccount(decimal startBalance, decimal interest) : base(startBalance, interest)
             {
 
+            }
+            public override void Update(Form1 formReference)
+            {
+                formReference.studentsSavingsAccountBalanceLabel.Text = Balance();
             }
         }
         public class CreditAccount : BankAccount
         {
-            public CreditAccount() : base()
+            public CreditAccount(decimal startBalance, decimal interest) : base(startBalance, interest)
             {
 
+            }
+            public override void MonthlyInterest()
+            {
+                balance += balance * interest;
+            }
+            public override void Update(Form1 formReference)
+            {
+                formReference.creditAccountBalanceLabel.Text = Balance();
             }
         }
 
@@ -69,18 +97,58 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
             InitializeComponent();
         }
         DateTime date;
+        BankSimulator simulator;
         private void Form1_Load(object sender, EventArgs e)
         {
-            date = DateTime.Now;
-        }
+            date = DateTime.Now.Date;
 
+            BankAccount[] accounts = new BankAccount[3]
+            {
+                new SavingsAccount(startBalance: 10_000, 0.01m),
+                new StudentsSavingsAccount(startBalance: 5_000, 0.01m),
+                new CreditAccount(startBalance: 10_000, 0.01m)
+            };
+            simulator = new BankSimulator(accounts);
+
+
+
+            dayTimer_Tick(null, null);
+
+        }
+        class BankSimulator
+        {
+            private BankAccount[] accounts;
+            public BankSimulator(BankAccount[] accounts)
+            {
+                this.accounts = accounts;
+            }
+            public void MonthlyInterest()
+            {
+                foreach (BankAccount acc in this.accounts)
+                {
+                    acc.MonthlyInterest();
+                }
+            }
+            public void Update(Form1 formReference)
+            {
+                foreach (BankAccount acc in this.accounts)
+                {
+                    acc.Update(formReference);
+                }
+            }
+        }
         private void dayTimer_Tick(object sender, EventArgs e)
         {
             dateLabel.Text = $"Day: {date.Day}. {date.Month} {date.Year}";
+
+            simulator.Update(this);
+
             if(date.Day == 1)
             {
-
+                simulator.MonthlyInterest();
             }
+
+            date = date.AddDays(1);
         }
     }
 }
