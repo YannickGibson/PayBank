@@ -35,62 +35,99 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
         */
         public abstract class BankAccount
         {
-            public decimal balance { get; set; }
-            public decimal interest { get; set; }
+            internal decimal balance { get; set; }
+            internal decimal interest { get; set; } = 0.005m;
             //
-            public BankAccount(decimal startBalance = 10_000, decimal interest = 0.01m)
+            public BankAccount(decimal startBalance = 10_000)
             {
                 balance = startBalance;
-                this.interest = interest;
             }
-            public abstract void MonthlyInterest();
-            public abstract void Update(Form1 formReference);
+            public abstract void MonthlyInterest(Form1 that);
             public string Balance()
             {
                 return $"Balance: {balance:#.##}Kč";
             }
+            public void Withdraw(int amount)
+            {
+                balance -= amount;
+            }
+            public void Deposit(int amount)
+            {
+                balance += amount;
+            }
+            public virtual bool CheckWithdraw(decimal amount)
+            {
+                if (balance - amount > 0)
+                    return true;
+                else
+                    return false;
+            }
         }
         public class SavingsAccount : BankAccount 
-        { 
-            public SavingsAccount(decimal startBalance, decimal interest) : base(startBalance, interest)
+        {
+            public SavingsAccount(decimal startBalance) : base(startBalance)
             {
-            
+                interest = 0.01m;
             }
-            public override void MonthlyInterest()
+            public override void MonthlyInterest(Form1 that)
             {
-                balance += balance * interest;
-            }
-            public override void Update(Form1 formReference)
-            {
-                formReference.savingsAccountBalanceLabel.Text = Balance(); 
+                decimal monthlyInterest = balance * interest;
+                balance += monthlyInterest;
+                that.savingsAccountMonthlyInterest.Text = $"+ {monthlyInterest:#.##}";
             }
         }
-        public class StudentsSavingsAccount : SavingsAccount
+        public class StudentSavingsAccount : SavingsAccount
         {
-            public StudentsSavingsAccount(decimal startBalance, decimal interest) : base(startBalance, interest)
+            public StudentSavingsAccount(decimal startBalance) : base(startBalance)
             {
 
             }
-            public override void Update(Form1 formReference)
+            public override void MonthlyInterest(Form1 that)
             {
-                formReference.studentsSavingsAccountBalanceLabel.Text = Balance();
+                decimal monthlyInterest = balance * interest;
+                balance += monthlyInterest;
+                that.studentSavingsAccountMonthlyInterest.Text = $"+ {monthlyInterest:#.##}";
             }
         }
         public class CreditAccount : BankAccount
         {
-            public CreditAccount(decimal startBalance, decimal interest) : base(startBalance, interest)
+            public CreditAccount(decimal startBalance) : base(startBalance)
             {
 
             }
-            public override void MonthlyInterest()
+            int negative = 5_000;
+            decimal baseTax = 15;
+            public override void MonthlyInterest(Form1 that)
             {
-                balance += balance * interest;
+                decimal interestAndTax = 0;
+                if ( balance > 0){
+                    interestAndTax += balance * interest;
+                    interestAndTax += baseTax;
+                }
+                else if (balance > -negative)
+                {
+                    // rate of pain is going to decline
+                    interestAndTax += (negative - balance) * interest;
+                    interestAndTax += baseTax;
+                }
+                else
+                {
+                    balance = negative; //interestAndTag still gon be 0
+                }
+                that.creditAccountMonthlyInterest.Text = $"- {interestAndTax:#.##}";
+                balance -= interestAndTax;
             }
-            public override void Update(Form1 formReference)
+            public override bool CheckWithdraw(decimal amount)
             {
-                formReference.creditAccountBalanceLabel.Text = Balance();
+                if (balance + negative - amount > 0)
+                    return true;
+                else
+                    return false;
             }
         }
+
+
+
 
         public Form1()
         {
@@ -102,39 +139,63 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
         {
             date = DateTime.Now.Date;
 
-            BankAccount[] accounts = new BankAccount[3]
-            {
-                new SavingsAccount(startBalance: 10_000, 0.01m),
-                new StudentsSavingsAccount(startBalance: 5_000, 0.01m),
-                new CreditAccount(startBalance: 10_000, 0.01m)
-            };
-            simulator = new BankSimulator(accounts);
+            SavingsAccount sav = new SavingsAccount(startBalance: 10_000);
+            savingsAccountDepositButton.Tag = new object[2] { sav, savingsAccountDepositNumericUpDown };
+            savingsAccountWithdrawButton.Tag = new object[2] { sav, savingsAccountWithdrawNumericUpDown };
 
+            StudentSavingsAccount studSav = new StudentSavingsAccount(startBalance: 5_000);
+            studentSavingsAccountDepositButton.Tag = new object[2] { studSav, studentSavingsAccountDepositNumericUpDown };
+            studentSavingsAccountWithdrawButton.Tag = new object[2] { studSav, studentSavingsAccountWithdrawNumericUpDown };
+
+            CreditAccount cred = new CreditAccount(startBalance: 10_000);
+            creditAccountDepositButton.Tag = new object[2] { cred, creditAccountDepositNumericUpDown };
+            creditAccountWithdrawButton.Tag = new object[2] { cred, creditAccountWithdrawNumericUpDown };
+
+            simulator = new BankSimulator(
+                sav,
+                studSav,
+                cred
+                );
 
 
             dayTimer_Tick(null, null);
-
         }
         class BankSimulator
         {
             private BankAccount[] accounts;
-            public BankSimulator(BankAccount[] accounts)
+            public SavingsAccount savingsAccount;
+            public StudentSavingsAccount studentSavingsAccount;
+            public CreditAccount creditAccount;
+            public BankSimulator(
+                SavingsAccount savingsAccount,
+                StudentSavingsAccount studentSavingsAccount,
+                CreditAccount creditAccount
+                )
             {
-                this.accounts = accounts;
+                this.savingsAccount = savingsAccount;
+                this.studentSavingsAccount = studentSavingsAccount;
+                this.creditAccount = creditAccount;
+                accounts = new BankAccount[3]
+                {
+                    savingsAccount, studentSavingsAccount, creditAccount
+                };
             }
-            public void MonthlyInterest()
+            public void MonthlyInterest(Form1 that)
             {
                 foreach (BankAccount acc in this.accounts)
                 {
-                    acc.MonthlyInterest();
+                    acc.MonthlyInterest(that);
                 }
             }
-            public void Update(Form1 formReference)
+            public void Deposit(BankAccount acc, int amount)
             {
-                foreach (BankAccount acc in this.accounts)
-                {
-                    acc.Update(formReference);
-                }
+                acc.Deposit(amount);
+            }
+            public void Update(Form1 that)
+            {
+                that.savingsAccountBalanceLabel.Text = savingsAccount.Balance();
+                that.studentSavingsAccountBalanceLabel.Text = studentSavingsAccount.Balance();
+                that.creditAccountBalanceLabel.Text = creditAccount.Balance();
             }
         }
         private void dayTimer_Tick(object sender, EventArgs e)
@@ -145,10 +206,69 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
 
             if(date.Day == 1)
             {
-                simulator.MonthlyInterest();
+                simulator.MonthlyInterest(this);
+                ActivateDeactivateWitdrawButtons();//Only necessary after the balance changes
             }
 
             date = date.AddDays(1);
+        }
+
+        private void stopTimeButton_Click(object sender, EventArgs e)
+        {
+            dayTimer.Enabled = !dayTimer.Enabled;
+        }
+
+        private void savingsAccountDepositButton_Click(object sender, EventArgs e)
+        {
+            Button b = sender as Button;
+            object[] account_numericUpDown = b.Tag as object[];
+            BankAccount targetAccount =  account_numericUpDown[0] as BankAccount;
+            int amount = Convert.ToInt32( (account_numericUpDown[1] as NumericUpDown).Value );
+            simulator.Deposit(targetAccount, amount);
+
+            if (targetAccount.CheckWithdraw(amount) == true)
+            {
+                b.Enabled = true;
+            }
+            simulator.Update(this);
+        }
+
+        private void savingsAccountWithdrawButton_Click(object sender, EventArgs e)
+        {
+            Button b = sender as Button;
+            object[] account_numericUpDown = b.Tag as object[];
+            BankAccount targetAccount = account_numericUpDown[0] as BankAccount;
+            int amount = Convert.ToInt32( (account_numericUpDown[1] as NumericUpDown).Value );
+            targetAccount.Withdraw(amount);
+
+            if ( targetAccount.CheckWithdraw(amount) == false)
+            {
+                b.Enabled = false;
+            }
+            simulator.Update(this);
+        }
+
+        void ActivateDeactivateWitdrawButtons()
+        {
+            if (simulator.savingsAccount.CheckWithdraw(savingsAccountWithdrawNumericUpDown.Value))
+                savingsAccountWithdrawButton.Enabled = true;
+            else
+                savingsAccountWithdrawButton.Enabled = false;
+
+            if (simulator.studentSavingsAccount.CheckWithdraw(studentSavingsAccountWithdrawNumericUpDown.Value) )
+                studentSavingsAccountWithdrawButton.Enabled = true;
+            else
+                studentSavingsAccountWithdrawButton.Enabled = false;
+
+            if (simulator.creditAccount.CheckWithdraw(creditAccountWithdrawNumericUpDown.Value))
+                creditAccountWithdrawButton.Enabled = true;
+            else
+                creditAccountWithdrawButton.Enabled = false;
+        }
+
+        private void savingsAccountDepositNumericUpDown_ValueChanged(object sender, EventArgs e)
+        {
+            ActivateDeactivateWitdrawButtons();
         }
     }
 }
