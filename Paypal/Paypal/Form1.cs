@@ -73,7 +73,7 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
             {
                 decimal monthlyInterest = balance * interest;
                 balance += monthlyInterest;
-                that.savingsAccountMonthlyInterest.Text = $"+ {monthlyInterest:#.##}";
+                that.savingsAccountMonthlyInterest.Text = $"+ {monthlyInterest:#.##} Kč";
             }
         }
         public class StudentSavingsAccount : SavingsAccount
@@ -86,7 +86,7 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
             {
                 decimal monthlyInterest = balance * interest;
                 balance += monthlyInterest;
-                that.studentSavingsAccountMonthlyInterest.Text = $"+ {monthlyInterest:#.##}";
+                that.studentSavingsAccountMonthlyInterest.Text = $"+ {monthlyInterest:#.##} Kč";
             }
         }
         public class CreditAccount : BankAccount
@@ -114,7 +114,7 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
                 {
                     balance = negative; //interestAndTag still gon be 0
                 }
-                that.creditAccountMonthlyInterest.Text = $"- {interestAndTax:#.##}";
+                that.creditAccountMonthlyInterest.Text = $"- {interestAndTax:#.##} Kč";
                 balance -= interestAndTax;
             }
             public override bool CheckWithdraw(decimal amount)
