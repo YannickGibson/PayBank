@@ -45,7 +45,7 @@ Nastudujte si principy spolupráce v GitHubu a spolupráci na společné reposit
             public abstract void MonthlyInterest(Form1 that);
             public string Balance()
             {
-                return $"Balance: {balance:#.##}Kč";
+                return $"Balance: {balance:#.##} Kč";
             }
             public void Withdraw(int amount)
             {
